@@ -13,8 +13,10 @@ import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
 import kafka.utils.ZKStringSerializer$;
 import kafka.utils.ZkUtils;
+import kafka.zk.KafkaZkClient;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.kafka.common.utils.Time;
+import scala.Int;
 import scala.Option;
 import scala.collection.JavaConverters;
 import scala.collection.mutable.Seq;
@@ -50,7 +52,7 @@ public class EmbeddedKafkaServer {
 
     public static EmbeddedKafkaServer start(int brokerId, String zkConnectionString, int port) {
         // TestUtils#createBrokerConfig defalut values
-        // see => https://github.com/apache/kafka/blob/1.0.0/core/src/test/scala/unit/kafka/utils/TestUtils.scala#L199-L215
+        // see => https://github.com/apache/kafka/blob/1.1.0/core/src/test/scala/unit/kafka/utils/TestUtils.scala#L199-L215
         Properties properties =
                 TestUtils
                         .createBrokerConfig(
@@ -70,7 +72,8 @@ public class EmbeddedKafkaServer {
                                 false,  // enableSaslSsl
                                 0,  // saslSslPort
                                 Option.empty(),  // rack
-                                1 // logDirCount
+                                1, // logDirCount
+                                false // enableToken
                         );
 
         ZkClient zkClient = new ZkClient(zkConnectionString, 6000, 10000, ZKStringSerializer$.MODULE$);
@@ -99,11 +102,11 @@ public class EmbeddedKafkaServer {
         return String.format("localhost:%d", getPort());
     }
 
-    public static void createTopic(String topic, int numPartitions, int replicationFactor, EmbeddedKafkaServer... servers) {
-        createTopic(topic, numPartitions, replicationFactor, Arrays.asList(servers));
+    public static void createTopic(String zkConnectionString, String topic, int numPartitions, int replicationFactor, EmbeddedKafkaServer... servers) {
+        createTopic(zkConnectionString, topic, numPartitions, replicationFactor, Arrays.asList(servers));
     }
 
-    public static void createTopic(String topic, int numPartitions, int replicationFactor, List<EmbeddedKafkaServer> servers) {
+    public static void createTopic(String zkConnectionString, String topic, int numPartitions, int replicationFactor, List<EmbeddedKafkaServer> servers) {
         Seq<KafkaServer> kafkaServers =
                 JavaConverters
                         .asScalaBuffer(
@@ -113,9 +116,21 @@ public class EmbeddedKafkaServer {
                                         .collect(Collectors.toList())
                         );
 
-        ZkUtils zkUtils = servers.get(0).zkUtils;
+        // see => https://github.com/apache/kafka/blob/1.1.0/core/src/test/scala/unit/kafka/zk/ZooKeeperTestHarness.scala#L39-L61
+        KafkaZkClient zkClient =
+                KafkaZkClient
+                        .apply(
+                                zkConnectionString,
+                                false,
+                                6000,
+                                10000,
+                                Int.MaxValue(),
+                                Time.SYSTEM,
+                                "kafka.server",
+                                "SessionExpireListener"
+                        );
 
-        TestUtils.createTopic(zkUtils, topic, numPartitions, replicationFactor, kafkaServers, new Properties());
+        TestUtils.createTopic(zkClient, topic, numPartitions, replicationFactor, kafkaServers, new Properties());
     }
 
     public void stop() {
