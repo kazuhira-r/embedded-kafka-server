@@ -1,5 +1,6 @@
 package org.littlewings.kafka.embedded;
 
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -57,7 +58,7 @@ public class EmbeddedKafkaServerTest {
                 consumer.subscribe(Arrays.asList("test-topic"));
 
                 while (true) {
-                    ConsumerRecords<String, String> records = consumer.poll(1000L);
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1L));
 
                     if (records.isEmpty()) {
                         continue;
@@ -128,7 +129,7 @@ public class EmbeddedKafkaServerTest {
                 consumer.subscribe(Arrays.asList("test-topic"));
 
                 while (true) {
-                    ConsumerRecords<String, String> records = consumer.poll(1000L);
+                    ConsumerRecords<String, String> records = consumer.poll(Duration.ofSeconds(1L));
 
                     if (records.isEmpty()) {
                         continue;

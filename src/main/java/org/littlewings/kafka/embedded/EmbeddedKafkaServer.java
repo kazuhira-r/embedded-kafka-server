@@ -12,7 +12,6 @@ import kafka.server.KafkaConfig;
 import kafka.server.KafkaServer;
 import kafka.utils.TestUtils;
 import kafka.utils.ZKStringSerializer$;
-import kafka.utils.ZkUtils;
 import kafka.zk.KafkaZkClient;
 import org.I0Itec.zkclient.ZkClient;
 import org.apache.kafka.common.utils.Time;
@@ -25,13 +24,11 @@ public class EmbeddedKafkaServer {
     KafkaServer kafkaServer;
     int port;
     ZkClient zkClient;
-    ZkUtils zkUtils;
 
-    public EmbeddedKafkaServer(KafkaServer kafkaServer, int port, ZkClient zkClient, ZkUtils zkUtils) {
+    public EmbeddedKafkaServer(KafkaServer kafkaServer, int port, ZkClient zkClient) {
         this.kafkaServer = kafkaServer;
         this.port = port;
         this.zkClient = zkClient;
-        this.zkUtils = zkUtils;
     }
 
     static int randomPort() {
@@ -52,7 +49,7 @@ public class EmbeddedKafkaServer {
 
     public static EmbeddedKafkaServer start(int brokerId, String zkConnectionString, int port) {
         // TestUtils#createBrokerConfig defalut values
-        // see => https://github.com/apache/kafka/blob/1.1.0/core/src/test/scala/unit/kafka/utils/TestUtils.scala#L199-L215
+        // see => https://github.com/apache/kafka/blob/2.0.0/core/src/test/scala/unit/kafka/utils/TestUtils.scala#L199-L216
         Properties properties =
                 TestUtils
                         .createBrokerConfig(
@@ -78,16 +75,9 @@ public class EmbeddedKafkaServer {
 
         ZkClient zkClient = new ZkClient(zkConnectionString, 6000, 10000, ZKStringSerializer$.MODULE$);
 
-        ZkUtils zkUtils =
-                ZkUtils
-                        .apply(
-                                zkClient,  // zkClient
-                                false  // isZkSecurityEnabled
-                        );
-
         KafkaServer kafkaServer = TestUtils.createServer(new KafkaConfig(properties), Time.SYSTEM);
 
-        return new EmbeddedKafkaServer(kafkaServer, port, zkClient, zkUtils);
+        return new EmbeddedKafkaServer(kafkaServer, port, zkClient);
     }
 
     public int getBrokerId() {
@@ -116,7 +106,7 @@ public class EmbeddedKafkaServer {
                                         .collect(Collectors.toList())
                         );
 
-        // see => https://github.com/apache/kafka/blob/1.1.0/core/src/test/scala/unit/kafka/zk/ZooKeeperTestHarness.scala#L39-L61
+        // see => https://github.com/apache/kafka/blob/2.0.0/core/src/test/scala/unit/kafka/zk/ZooKeeperTestHarness.scala#L40-L60
         KafkaZkClient zkClient =
                 KafkaZkClient
                         .apply(
