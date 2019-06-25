@@ -106,18 +106,20 @@ public class EmbeddedKafkaServer {
                                         .collect(Collectors.toList())
                         );
 
-        // see => https://github.com/apache/kafka/blob/2.0.0/core/src/test/scala/unit/kafka/zk/ZooKeeperTestHarness.scala#L40-L60
+        // see => https://github.com/apache/kafka/blob/2.3.0/core/src/test/scala/unit/kafka/zk/ZooKeeperTestHarness.scala#L39-L61
+	// see => https://github.com/apache/kafka/blob/2.3.0/core/src/main/scala/kafka/zk/KafkaZkClient.scala#L1816-L1824
         KafkaZkClient zkClient =
                 KafkaZkClient
                         .apply(
                                 zkConnectionString,
                                 false,
-                                6000,
+                                15000,
                                 10000,
                                 Int.MaxValue(),
                                 Time.SYSTEM,
                                 "kafka.server",
-                                "SessionExpireListener"
+                                "SessionExpireListener",
+				Option.empty()
                         );
 
         TestUtils.createTopic(zkClient, topic, numPartitions, replicationFactor, kafkaServers, new Properties());
